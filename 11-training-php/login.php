@@ -6,12 +6,18 @@ require_once __DIR__ . '/sessions/SessionHandlerRedis.php';
 $handler = new SessionHandlerRedis($redis);
 session_set_save_handler($handler, true);
 session_start();
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 
 require_once 'models/UserModel.php';
 $userModel = new UserModel();
 
 
 if (!empty($_POST['submit'])) {
+       if (empty($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        die('CSRF validation failed');
+    }
     $users = [
         'username' => $_POST['username'],
         'password' => $_POST['password']
@@ -50,6 +56,8 @@ if (!empty($_POST['submit'])) {
 
                 <div style="padding-top:30px" class="panel-body" >
                     <form method="post" class="form-horizontal" role="form">
+                        <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+
 
                         <div class="margin-bottom-25 input-group">
                             <span class="input-group-addon"><i class="glyphicon glyphicon-user"></i></span>
